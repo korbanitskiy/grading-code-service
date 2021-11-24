@@ -1,0 +1,7 @@
+### Create
+POST http://127.0.0.1:8000/users?user=777
+Content-Type: Application/Json
+
+{
+  "user": "Test"
+}

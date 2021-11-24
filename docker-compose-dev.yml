@@ -1,0 +1,28 @@
+version: '3.4'
+
+services:
+
+  users:
+    container_name: users
+    build:
+      context: services/users
+      dockerfile: Dockerfile-dev
+    volumes:
+      - './services/users/src:/app/src'
+    ports:
+      - '80:8000'
+    environment:
+      - APP_MODE=dev
+      - DATABASE_URI=postgresql://app:pgpass@users-db:5432/users_dev
+      - DATABASE_TEST_URI=postgresql://app:pgpass@users-db:5432/users_test
+    depends_on:
+      - users-db
+
+  users-db:
+    image: postgres:12-alpine
+    container_name: users-db
+    ports:
+      - '5435:5432'
+    environment:
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=pgpass
