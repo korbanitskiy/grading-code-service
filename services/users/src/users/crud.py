@@ -2,6 +2,11 @@ from .models import User
 from .schemas import UserRequest
 
 
+def find_all_users(db):
+    qs = db.query(User)
+    return qs.all()
+
+
 def find_user(db, user_id: int):
     user_qs = db.query(User).filter(User.id == user_id)
     return user_qs.first()

@@ -38,10 +38,30 @@ def db():
 
 @pytest.fixture()
 def john(db):
-    john = User(name='john', email='john@mail.com', is_active=True)
-    db.add(john)
-    db.commit()
-    db.refresh(john)
+    values = dict(name='john', email='john@mail.com', is_active=True)
+    john = _create_user(values, db)
     yield john
     db.delete(john)
     db.commit()
+
+
+@pytest.fixture()
+def mary(db):
+    values = dict(name='mary', email='mary@mail.com', is_active=False)
+    mary = _create_user(values, db)
+    yield mary
+    db.delete(mary)
+    db.commit()
+
+
+def _create_user(fields, db):
+    user = User(**fields)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    db_fields = fields.copy()
+    db_fields['id'] = user.id
+    user._fields = fields
+    user._db_fields = db_fields
+    return user
