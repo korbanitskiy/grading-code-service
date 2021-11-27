@@ -1,43 +1,16 @@
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from users.crud import UserAlreadyExistsError
-from users.main import app
-from users.database import Base
-from users.deps import get_db
-
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-client = TestClient(app)
-
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
 
 
-def get_test_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
-app.dependency_overrides[get_db] = get_test_db
 
 
-def test_user_ping():
+def test_user_ping(client):
     response = client.get("/users/ping")
     assert response.status_code == 200, response.text
     assert response.json() == {"message": "pong"}
 
 
-def test_user_add():
+def test_user_add(client):
     response = client.post(
         "/users",
         json={
@@ -51,22 +24,25 @@ def test_user_add():
     assert data['message'] == 'TestUser was added'
 
 
-def test_duplicate_email_error():
-    client.post(
-        "/users",
-        json={
-            'name': "TestUser",
-            'email': "test_user_error@mail.com",
-            'is_active': False,
-        }
-    )
+def test_duplicate_email_error(client):
+    user = {'name': "TestUser", 'email': "test_user_error@mail.com", 'is_active': False}
+    response_1 = client.post("/users", json=user)
+    response_2 = client.post("/users", json=user)
+    assert response_1.status_code == 201
+    assert response_2.status_code == 400
 
-    with pytest.raises(UserAlreadyExistsError):
-        client.post(
-            "/users",
-            json={
-                'name': "Another User",
-                'email': "test_user_error@mail.com",
-                'is_active': True,
-            }
-        )
+
+def test_user_found(client, john):
+    response = client.get(f"/users/{john.id}")
+    user = response.json()
+    assert response.status_code == 200
+    assert user['id'] == john.id
+    assert user['email'] == john.email
+    assert user['is_active'] == john.is_active
+
+
+def test_user_not_found(client):
+    response = client.get(f"/users/{123456789}")
+    msg = response.json()
+    assert response.status_code == 404
+    assert msg == f"User {123456789} is not found"

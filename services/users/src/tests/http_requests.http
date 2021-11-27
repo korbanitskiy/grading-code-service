@@ -1,7 +1,9 @@
 ### Create
-POST http://127.0.0.1:8000/users?user=777
+POST http://127.0.0.1:80/users
 Content-Type: Application/Json
 
 {
-  "user": "Test"
+  "name": "Test",
+  "email": "test@mail.com",
+  "is_active": true
 }
